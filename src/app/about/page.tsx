@@ -1,39 +1,34 @@
-// src/app/about/page.tsx
-import SEO from '@/components/SEO';
+'use client';
+import { motion } from 'framer-motion';
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen bg-white">
-      <SEO 
-        title="About Us | Gharpayy - India's Trusted PG Network" 
-        description="Learn how Gharpayy is revolutionizing the PG search experience for students and professionals." 
-        location="India"
-      />
-      
-      <div className="max-w-4xl mx-auto py-20 px-6">
-        <h1 className="text-5xl font-black text-blue-800 mb-6">Our Mission</h1>
-        <p className="text-xl text-gray-600 leading-relaxed mb-10">
-          Finding a home away from home shouldn't be a struggle. Gharpayy was born out of 
-          the frustration of hidden brokerage fees, unverified photos, and unreliable roommates. 
-          We are here to provide a transparent, tech-first PG booking experience.
+    <main className="min-h-screen bg-white py-20 px-6">
+      <div className="max-w-4xl mx-auto text-center">
+        <motion.h1 
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          className="text-5xl font-black text-slate-900 mb-8"
+        >
+          Redefining Living for <br/><span className="text-blue-600">Modern India.</span>
+        </motion.h1>
+        <p className="text-xl text-slate-600 leading-relaxed mb-12">
+          StayLocal was built to solve one problem: The struggle of finding a verified, 
+          broker-free PG in India's tech hubs. We use AI and real-time mapping to 
+          connect students directly with premium homeowners.
         </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mt-16">
-          <div className="space-y-4">
-            <h3 className="text-2xl font-bold">100% Verified</h3>
-            <p className="text-gray-500">Every PG on our platform is physically visited by our team to ensure what you see is what you get.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100">
+            <h3 className="text-3xl font-black text-blue-600">10k+</h3>
+            <p className="font-bold text-slate-400 uppercase text-xs mt-2">Verified Rooms</p>
           </div>
-          <div className="space-y-4">
-            <h3 className="text-2xl font-bold">Zero Brokerage</h3>
-            <p className="text-gray-500">We believe in direct connections. You talk to owners, not middlemen. No hidden charges, ever.</p>
+          <div className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100">
+            <h3 className="text-3xl font-black text-blue-600">0%</h3>
+            <p className="font-bold text-slate-400 uppercase text-xs mt-2">Brokerage Fee</p>
           </div>
-        </div>
-
-        <div className="mt-20 p-10 bg-blue-50 rounded-3xl text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to find your stay?</h2>
-          <a href="/" className="inline-block bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition">
-            Browse PGs Now
-          </a>
+          <div className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100">
+            <h3 className="text-3xl font-black text-blue-600">4+</h3>
+            <p className="font-bold text-slate-400 uppercase text-xs mt-2">Major Cities</p>
+          </div>
         </div>
       </div>
     </main>
