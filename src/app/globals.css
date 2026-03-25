@@ -24,3 +24,13 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+@keyframes heart-beat {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+.heart-active {
+  animation: heart-beat 0.3s ease-in-out;
+  fill: #ef4444;
+  color: #ef4444;
+}
