@@ -11,19 +11,20 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Load initial data from your database
+  // 1. Load your actual database properties on startup
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const { data } = await supabase.from('pgs').select('*').limit(3);
-        if (data) setAllPgs(data);
-      } catch (err) {
-        console.log("Initial load skipped: Table might be empty.");
+    const loadInitial = async () => {
+      const { data, error } = await supabase.from('pgs').select('*').limit(6);
+      if (error) {
+        console.error("Database Connection Error:", error.message);
+      } else if (data && data.length > 0) {
+        setAllPgs(data);
       }
     };
-    loadData();
+    loadInitial();
   }, []);
 
+  // 2. Hybrid Search Logic (DB First, then Google)
   const handleSearch = async (overrideValue?: string) => {
     const query = overrideValue || searchTerm;
     if (!query.trim()) return;
@@ -33,21 +34,20 @@ export default function Home() {
     if (overrideValue) setSearchTerm(overrideValue);
 
     try {
-      // 1. Search Supabase (Handles location and name)
+      // Step A: Check Supabase with Case-Insensitive search
       const { data: localData, error } = await supabase
         .from('pgs')
         .select('*')
         .or(`location.ilike.%${query}%,name.ilike.%${query}%`);
 
-      // 2. Hybrid Logic: If error or no results, use STABLE Google Maps link
       if (error || !localData || localData.length === 0) {
-        // This URL format is the most stable for mobile and desktop
-        const googleLink = `https://www.google.com/maps/search/${encodeURIComponent("PG Hostels in " + query)}`;
+        // Step B: Fallback to STABLE Google Maps Deep-Link
+        const googleLink = `http://googleusercontent.com/maps.google.com/search?q=${encodeURIComponent("PG Hostels in " + query)}`;
         
         setAllPgs([{
           id: 'google-result',
           name: `Top Rated PGs in ${query}`,
-          location: `View verified maps and 50+ listings for ${query}`,
+          location: `Verified maps and 50+ local listings for ${query}`,
           price: "Inquiry",
           rating: 4.8,
           isGoogle: true,
@@ -55,13 +55,13 @@ export default function Home() {
           image_url: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800'
         }]);
       } else {
+        // Step C: Show your own Database results
         setAllPgs(localData);
       }
     } catch (err) {
-      console.error("Search system error:", err);
+      console.error("Search failed:", err);
     } finally {
       setLoading(false);
-      // Smooth scroll to results
       setTimeout(() => {
         document.getElementById('listings')?.scrollIntoView({ behavior: 'smooth' });
       }, 300);
@@ -82,17 +82,17 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white selection:bg-blue-100">
       
-      {/* 1. FLOATING SUPPORT ICON */}
+      {/* 1. FLOATING SUPPORT CHAT */}
       <motion.div whileHover={{ scale: 1.1 }} className="fixed bottom-10 right-10 z-[100] cursor-pointer group">
         <div className="bg-blue-600 w-16 h-16 rounded-full flex items-center justify-center shadow-2xl animate-pulse text-2xl">💬</div>
       </motion.div>
 
-      {/* 2. NAVIGATION (Bold & Visible) */}
-      <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-xl border-b border-slate-100 px-10 py-6 flex justify-between items-center">
+      {/* 2. PREMIUM NAVIGATION */}
+      <nav className="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-xl border-b border-slate-100 px-10 py-6 flex justify-between items-center">
         <div className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">Stay<span className="text-blue-600">Local.</span></div>
         <div className="hidden md:flex gap-12 items-center">
           {['Find PG', 'About Us', 'Support'].map((item) => (
-            <button key={item} className="text-xs font-black text-slate-900 hover:text-blue-600 transition-all uppercase tracking-widest">{item}</button>
+            <button key={item} className="text-[10px] font-black text-slate-900 hover:text-blue-600 transition-all uppercase tracking-[0.2em]">{item}</button>
           ))}
           <Link href="/list-your-pg" className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black text-xs shadow-lg shadow-blue-100 uppercase">List Property</Link>
         </div>
@@ -124,7 +124,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-12">
           {[
             { label: 'Verified PGs', value: '1,200+' }, { label: 'Happy Students', value: '5,000+' },
-            { label: 'Smart Cities', value: '8' }, { label: 'Support', value: '24/7' }
+            { label: 'Smart Cities', value: '8' }, { label: 'Inquiry Hub', value: 'Live' }
           ].map((stat) => (
             <div key={stat.label} className="text-center">
               <p className="text-4xl font-black text-slate-900 mb-2">{stat.value}</p>
@@ -156,12 +156,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 6. LIST-VIEW RESULTS */}
+      {/* 6. DYNAMIC RESULTS LIST */}
       <section id="listings" className="py-24 px-6 bg-slate-50 min-h-[50vh]">
         <div className="max-w-7xl mx-auto">
-          {hasSearched && (
-            <h2 className="text-5xl font-black text-slate-900 mb-16 tracking-tighter italic">Results for "{searchTerm}"</h2>
-          )}
+          <h2 className="text-5xl font-black text-slate-900 mb-16 tracking-tighter italic">
+            {hasSearched ? `Results for "${searchTerm}"` : 'Recent Listings'}
+          </h2>
 
           <div className="space-y-12">
             <AnimatePresence>
@@ -184,8 +184,8 @@ export default function Home() {
                         <p className="text-slate-400 font-bold text-lg flex items-center gap-2 italic">📍 {pg.location}</p>
                       </div>
                       <div className="md:text-right">
-                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] mb-1">Starting Rent</p>
-                        <p className="text-4xl font-black text-blue-600">{pg.price === "Inquiry" ? "Contact" : `₹${pg.price}`}</p>
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] mb-1">Rent Package</p>
+                        <p className="text-4xl font-black text-blue-600">{pg.price === "Inquiry" ? "Inquiry" : `₹${pg.price}`}</p>
                       </div>
                     </div>
 
