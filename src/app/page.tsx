@@ -11,16 +11,15 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // 1. Load Featured PGs on startup
+  // Load initial data
   useEffect(() => {
-    const loadInitial = async () => {
+    const loadData = async () => {
       const { data } = await supabase.from('pgs').select('*').limit(3);
       if (data) setAllPgs(data);
     };
-    loadInitial();
+    loadData();
   }, []);
 
-  // 2. The Hybrid Search Function
   const handleSearch = async (overrideValue?: string) => {
     const query = overrideValue || searchTerm;
     if (!query.trim()) return;
@@ -30,34 +29,33 @@ export default function Home() {
     if (overrideValue) setSearchTerm(overrideValue);
 
     try {
-      // Step A: Search your Database (Supabase)
-      const { data: localData, error } = await supabase
+      // 1. Search Supabase
+      const { data: localData } = await supabase
         .from('pgs')
         .select('*')
-        .ilike('location', `%${query}%`);
+        .or(`location.ilike.%${query}%,name.ilike.%${query}%`);
 
-      if (error) throw error;
-
-      // Step B: Logic to show Listed vs Non-Listed (Google)
-      if (localData && localData.length > 0) {
-        // Show your own database results
-        setAllPgs(localData);
-      } else {
-        // FALLBACK: Show Google Maps search directly
-        const googleLink = `https://www.google.com/maps/search/PG+hostels+in+${encodeURIComponent(query)}`;
+      // 2. Hybrid Logic: If empty, create the Google Map Result
+      if (!localData || localData.length === 0) {
+        // FIXED GOOGLE MAPS URL (Uses standard search query)
+        const googleSearchUrl = `https://www.google.com/maps/search/PG+Hostels+in+${encodeURIComponent(query)}`;
         
         setAllPgs([{
-          id: 'google-fallback',
-          name: `Top PGs in ${query}`,
-          location: `We are currently verifying local PGs here. Click to see 50+ listings on Google Maps.`,
-          price: "Live Rates",
+          id: 'google-result',
+          name: `Top Rated PGs in ${query}`,
+          location: `View 50+ verified listings and maps for ${query}`,
+          price: "Check Rent",
+          rating: 4.8,
+          phone: "+91 90000 00000",
           image_url: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800',
           isGoogle: true,
-          url: googleLink
+          url: googleSearchUrl
         }]);
+      } else {
+        setAllPgs(localData);
       }
     } catch (err) {
-      console.error("Search Error:", err);
+      console.error("Search failed:", err);
     } finally {
       setLoading(false);
       setTimeout(() => {
@@ -67,98 +65,126 @@ export default function Home() {
   };
 
   const cities = [
-    { name: 'Bangalore', img: 'https://images.unsplash.com/photo-1596402184320-417e7178b2cd?w=600', tag: 'Tech Hub' },
-    { name: 'Chennai', img: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=600', tag: 'Automobile' },
-    { name: 'Hyderabad', img: 'https://images.unsplash.com/photo-1510009489794-352fba39a0b8?w=600', tag: 'HITEC City' },
-    { name: 'Pune', img: 'https://images.unsplash.com/photo-1565214975484-3cfa9e56f914?w=600', tag: 'Education' },
-    { name: 'Mumbai', img: 'https://images.unsplash.com/photo-1566552881560-0be862a7c445?w=600', tag: 'Financial' },
-    { name: 'Delhi', img: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=600', tag: 'NCR' },
-    { name: 'Kolkata', img: 'https://images.unsplash.com/photo-1558431382-bb7b38c49051?w=600', tag: 'Cultural' },
-    { name: 'Ahmedabad', img: 'https://images.unsplash.com/photo-1623150502742-6a849aa94be4?w=600', tag: 'Business' }
+    { name: 'Bangalore', tag: 'Tech Hub', img: 'https://images.unsplash.com/photo-1596402184320-417e7178b2cd?w=600', color: 'bg-blue-600' },
+    { name: 'Chennai', tag: 'Automobile', img: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=600', color: 'bg-orange-500' },
+    { name: 'Hyderabad', tag: 'HITEC City', img: 'https://images.unsplash.com/photo-1510009489794-352fba39a0b8?w=600', color: 'bg-emerald-500' },
+    { name: 'Pune', tag: 'Education', img: 'https://images.unsplash.com/photo-1565214975484-3cfa9e56f914?w=600', color: 'bg-purple-600' },
+    { name: 'Mumbai', tag: 'Financial', img: 'https://images.unsplash.com/photo-1566552881560-0be862a7c445?w=600', color: 'bg-pink-600' },
+    { name: 'Delhi', tag: 'NCR Region', img: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=600', color: 'bg-red-600' },
+    { name: 'Kolkata', tag: 'Cultural', img: 'https://images.unsplash.com/photo-1558431382-bb7b38c49051?w=600', color: 'bg-yellow-600' },
+    { name: 'Ahmedabad', tag: 'Business', img: 'https://images.unsplash.com/photo-1623150502742-6a849aa94be4?w=600', color: 'bg-teal-600' }
   ];
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-white selection:bg-blue-100">
+      {/* Navigation */}
+      <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-xl border-b border-slate-100 px-10 py-6 flex justify-between items-center">
+        <div className="text-3xl font-black text-slate-900 tracking-tighter">STAY<span className="text-blue-600">LOCAL</span></div>
+        <div className="hidden md:flex gap-12 items-center">
+          {['FIND PG', 'ABOUT US', 'SUPPORT'].map((item) => (
+            <button key={item} className="text-sm font-black text-slate-900 hover:text-blue-600 transition-all tracking-[0.2em]">{item}</button>
+          ))}
+          <Link href="/list-your-pg" className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black text-xs shadow-lg shadow-blue-100">LIST PROPERTY</Link>
+        </div>
+      </nav>
+
       {/* Hero Section */}
-      <section className="relative h-[70vh] flex items-center justify-center bg-slate-900 overflow-hidden">
+      <section className="relative h-[80vh] flex items-center justify-center bg-slate-900 overflow-hidden">
         <motion.img 
-          initial={{ scale: 1.1 }} animate={{ scale: 1 }} transition={{ duration: 10, repeat: Infinity, repeatType: 'reverse' }}
+          initial={{ scale: 1.2 }} animate={{ scale: 1 }} transition={{ duration: 2 }}
           src="https://images.unsplash.com/photo-1554995207-c18c203602cb?w=1920" 
-          className="absolute inset-0 w-full h-full object-cover opacity-30" 
+          className="absolute inset-0 w-full h-full object-cover opacity-40" 
         />
-        <div className="relative z-10 text-center px-6">
-          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-6xl md:text-9xl font-black text-white mb-8 tracking-tighter">
-            Stay<span className="text-blue-600">Local.</span>
-          </motion.h1>
-          <div className="flex flex-col md:flex-row bg-white/10 backdrop-blur-xl p-2 rounded-[2.5rem] border border-white/20 shadow-2xl max-w-2xl mx-auto">
+        <div className="relative z-10 text-center px-6 max-w-4xl">
+          <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-7xl md:text-9xl font-black text-white mb-8 tracking-tighter italic">Find Your Hub.</motion.h1>
+          <div className="flex bg-white p-3 rounded-[3rem] shadow-2xl max-w-2xl mx-auto border-4 border-white/20">
             <input 
-              className="flex-1 px-8 py-5 bg-white rounded-[2rem] text-slate-900 outline-none font-bold text-lg" 
-              placeholder="Search Area, Colony or College..."
+              className="flex-1 px-8 py-4 text-slate-900 outline-none font-black text-xl placeholder:text-slate-400" 
+              placeholder="Colony, College or Area..."
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
-            <button onClick={() => handleSearch()} className="bg-blue-600 text-white px-10 rounded-[2rem] font-black hover:bg-white hover:text-blue-600 transition-all">Search</button>
+            <button onClick={() => handleSearch()} className="bg-blue-600 text-white px-12 rounded-[2.5rem] font-black text-lg shadow-xl">Search</button>
           </div>
         </div>
       </section>
 
-      {/* 8-City Interactive Grid */}
-      <section className="max-w-7xl mx-auto py-24 px-6">
-        <h2 className="text-4xl font-black text-slate-900 mb-12">Popular Student Hubs</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      {/* 8-City Photo Grid */}
+      <section className="max-w-7xl mx-auto py-32 px-6">
+        <h2 className="text-5xl font-black text-slate-900 mb-16 tracking-tighter italic">Top Student Hubs</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
           {cities.map((city, i) => (
             <motion.div
               key={city.name}
-              whileHover={{ scale: 1.05, y: -10 }}
+              whileHover={{ scale: 1.05, y: -15, transition: { type: "spring", stiffness: 300 } }}
               onClick={() => handleSearch(city.name)}
-              className="relative h-80 rounded-[3rem] overflow-hidden cursor-pointer shadow-xl group"
+              className="relative h-96 rounded-[3.5rem] overflow-hidden cursor-pointer shadow-2xl group"
             >
-              <img src={city.img} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all" />
-              <div className="absolute bottom-8 left-8">
-                <p className="text-blue-400 font-black uppercase text-[10px] tracking-widest mb-1">{city.tag}</p>
-                <h3 className="text-2xl font-black text-white">{city.name}</h3>
+              <img src={city.img} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-125" alt={city.name} />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80" />
+              <div className="absolute bottom-10 left-10">
+                <div className={`w-12 h-2 ${city.color} mb-4 rounded-full`} />
+                <p className="text-white/60 font-black uppercase tracking-[0.3em] text-[10px] mb-2">{city.tag}</p>
+                <h3 className="text-3xl font-black text-white">{city.name}</h3>
               </div>
             </motion.div>
           ))}
         </div>
       </section>
 
-      {/* Results Section */}
-      <section id="listings" className="py-24 bg-slate-50 min-h-[40vh] px-6">
+      {/* Results Section (List View) */}
+      <section id="listings" className="py-24 px-6 bg-slate-50 min-h-[50vh]">
         <div className="max-w-7xl mx-auto">
-          {hasSearched && <h2 className="text-3xl font-black mb-12">Found in {searchTerm}</h2>}
-          
-          {loading ? (
-            <div className="text-center py-20 animate-pulse font-black text-blue-600">AI Searching Database & Google...</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-              <AnimatePresence>
-                {allPgs.map((pg) => (
-                  <motion.div key={pg.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm border border-slate-100 group">
-                    <div className="h-60 relative">
-                      <img src={pg.image_url} className="w-full h-full object-cover" />
-                      <div className={`absolute top-4 left-4 px-4 py-1 rounded-full text-[10px] font-black uppercase ${pg.isGoogle ? 'bg-white text-slate-900' : 'bg-blue-600 text-white'}`}>
-                        {pg.isGoogle ? 'Google Search' : 'StayLocal Verified'}
+          <h2 className="text-5xl font-black text-slate-900 mb-16 tracking-tighter">
+            {hasSearched ? `Results for "${searchTerm}"` : 'Featured Listings'}
+          </h2>
+
+          <div className="space-y-10">
+            <AnimatePresence>
+              {allPgs.map((pg, i) => (
+                <motion.div 
+                  key={pg.id || i} initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }}
+                  className="bg-white rounded-[4rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all border border-slate-100 flex flex-col lg:flex-row group"
+                >
+                  <div className="lg:w-[450px] h-80 relative overflow-hidden">
+                    <img src={pg.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
+                    <div className="absolute top-8 left-8 bg-white/95 backdrop-blur-md px-5 py-2 rounded-full text-[10px] font-black text-slate-900 shadow-xl tracking-widest uppercase">
+                      ⭐ {pg.rating || '4.5'}
+                    </div>
+                  </div>
+                  
+                  <div className="p-12 flex-1 flex flex-col justify-center">
+                    <div className="flex flex-col md:flex-row justify-between items-start mb-8 gap-4">
+                      <div>
+                        <h3 className="text-4xl font-black text-slate-900 mb-2 tracking-tight">{pg.name}</h3>
+                        <p className="text-slate-400 font-bold text-lg flex items-center gap-2 italic">📍 {pg.location}</p>
+                      </div>
+                      <div className="md:text-right">
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] mb-1">Starting Rent</p>
+                        <p className="text-4xl font-black text-blue-600">{pg.price === "Check Rent" ? "Inquiry" : `₹${pg.price}`}</p>
                       </div>
                     </div>
-                    <div className="p-8">
-                      <h3 className="text-xl font-black text-slate-900 mb-1">{pg.name}</h3>
-                      <p className="text-slate-400 text-sm font-bold mb-6 truncate">{pg.location}</p>
-                      <div className="flex justify-between items-center border-t pt-6">
-                        <span className="text-xl font-black text-blue-600">{pg.isGoogle ? "Check Maps" : `₹${pg.price}`}</span>
-                        {pg.isGoogle ? (
-                          <a href={pg.url} target="_blank" className="bg-slate-900 text-white px-6 py-2 rounded-xl text-xs font-black">Explore Google</a>
-                        ) : (
-                          <Link href={`/pg/${pg.id}`} className="bg-slate-900 text-white px-6 py-2 rounded-xl text-xs font-black">Details</Link>
-                        )}
+
+                    <div className="flex flex-wrap items-center justify-between border-t border-slate-50 pt-10 mt-4 gap-6">
+                      <div className="flex gap-12">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Contact</span>
+                          <span className="font-black text-slate-900 text-lg">{pg.phone || '+91 90000 00000'}</span>
+                        </div>
                       </div>
+                      {pg.isGoogle ? (
+                        <a href={pg.url} target="_blank" className="bg-slate-900 text-white px-12 py-5 rounded-[2rem] font-black text-sm hover:bg-blue-600 transition-all shadow-xl">VIEW ON GOOGLE MAPS</a>
+                      ) : (
+                        <Link href={`/pg/${pg.id}`}>
+                          <button className="bg-slate-900 text-white px-12 py-5 rounded-[2rem] font-black text-sm hover:bg-blue-600 transition-all shadow-xl">VIEW DETAILS</button>
+                        </Link>
+                      )}
                     </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          )}
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
         </div>
       </section>
     </main>
