@@ -1,7 +1,15 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js';
 
-// This ensures the app doesn't crash if keys are missing during development
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// NEXT_PUBLIC_ prefix is MANDATORY for these to work in the browser
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("Supabase environment variables are missing!");
+}
+
+// This client ONLY uses the Public Anon Key
+export const supabase = createClient(
+  supabaseUrl || '', 
+  supabaseAnonKey || ''
+);
