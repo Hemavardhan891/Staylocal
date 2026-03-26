@@ -11,7 +11,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Load initial data
   useEffect(() => {
     const loadData = async () => {
       const { data } = await supabase.from('pgs').select('*').limit(3);
@@ -29,33 +28,29 @@ export default function Home() {
     if (overrideValue) setSearchTerm(overrideValue);
 
     try {
-      // 1. Search Supabase
       const { data: localData } = await supabase
         .from('pgs')
         .select('*')
         .or(`location.ilike.%${query}%,name.ilike.%${query}%`);
 
-      // 2. Hybrid Logic: If empty, create the Google Map Result
       if (!localData || localData.length === 0) {
-        // FIXED GOOGLE MAPS URL (Uses standard search query)
-        const googleSearchUrl = `https://www.google.com/maps/search/PG+Hostels+in+${encodeURIComponent(query)}`;
+        // Fallback to Google Search if DB is empty
+        const googleLink = `https://www.google.com/maps/search/PG+Hostels+in+${encodeURIComponent(query)}`;
         
         setAllPgs([{
           id: 'google-result',
           name: `Top Rated PGs in ${query}`,
-          location: `View 50+ verified listings and maps for ${query}`,
-          price: "Check Rent",
+          location: `Showing verified listings and maps for ${query}`,
+          price: "Inquiry",
           rating: 4.8,
-          phone: "+91 90000 00000",
-          image_url: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800',
           isGoogle: true,
-          url: googleSearchUrl
+          url: googleLink
         }]);
       } else {
         setAllPgs(localData);
       }
     } catch (err) {
-      console.error("Search failed:", err);
+      console.error("Search error:", err);
     } finally {
       setLoading(false);
       setTimeout(() => {
@@ -71,24 +66,25 @@ export default function Home() {
     { name: 'Pune', tag: 'Education', img: 'https://images.unsplash.com/photo-1565214975484-3cfa9e56f914?w=600', color: 'bg-purple-600' },
     { name: 'Mumbai', tag: 'Financial', img: 'https://images.unsplash.com/photo-1566552881560-0be862a7c445?w=600', color: 'bg-pink-600' },
     { name: 'Delhi', tag: 'NCR Region', img: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=600', color: 'bg-red-600' },
-    { name: 'Kolkata', tag: 'Cultural', img: 'https://images.unsplash.com/photo-1558431382-bb7b38c49051?w=600', color: 'bg-yellow-600' },
-    { name: 'Ahmedabad', tag: 'Business', img: 'https://images.unsplash.com/photo-1623150502742-6a849aa94be4?w=600', color: 'bg-teal-600' }
+    // REPLACE THESE LINKS WITH YOUR ADDRESSES
+    { name: 'Kolkata', tag: 'Cultural', img: 'https://s3.india.com/wp-content/uploads/2025/07/kolkata-DIY.jpg##image/jpg', color: 'bg-yellow-600' },
+    { name: 'Ahmedabad', tag: 'Business', img: 'https://www.fabhotels.com/blog/wp-content/uploads/2019/05/Historical-Places-in-Ahmedabad_600.jpg', color: 'bg-teal-600' }
   ];
 
   return (
-    <main className="min-h-screen bg-white selection:bg-blue-100">
-      {/* Navigation */}
+    <main className="min-h-screen bg-white">
+      {/* Navigation - Bold & Visible */}
       <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-xl border-b border-slate-100 px-10 py-6 flex justify-between items-center">
-        <div className="text-3xl font-black text-slate-900 tracking-tighter">STAY<span className="text-blue-600">LOCAL</span></div>
+        <div className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Stay<span className="text-blue-600">Local</span></div>
         <div className="hidden md:flex gap-12 items-center">
-          {['FIND PG', 'ABOUT US', 'SUPPORT'].map((item) => (
-            <button key={item} className="text-sm font-black text-slate-900 hover:text-blue-600 transition-all tracking-[0.2em]">{item}</button>
+          {['Find PG', 'About Us', 'Support'].map((item) => (
+            <button key={item} className="text-sm font-black text-slate-900 hover:text-blue-600 transition-all uppercase tracking-widest">{item}</button>
           ))}
-          <Link href="/list-your-pg" className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black text-xs shadow-lg shadow-blue-100">LIST PROPERTY</Link>
+          <Link href="/list-your-pg" className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black text-xs shadow-lg">List Property</Link>
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Hero with Photo */}
       <section className="relative h-[80vh] flex items-center justify-center bg-slate-900 overflow-hidden">
         <motion.img 
           initial={{ scale: 1.2 }} animate={{ scale: 1 }} transition={{ duration: 2 }}
@@ -100,7 +96,7 @@ export default function Home() {
           <div className="flex bg-white p-3 rounded-[3rem] shadow-2xl max-w-2xl mx-auto border-4 border-white/20">
             <input 
               className="flex-1 px-8 py-4 text-slate-900 outline-none font-black text-xl placeholder:text-slate-400" 
-              placeholder="Colony, College or Area..."
+              placeholder="Search Colony, Area or College..."
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
@@ -120,7 +116,7 @@ export default function Home() {
               onClick={() => handleSearch(city.name)}
               className="relative h-96 rounded-[3.5rem] overflow-hidden cursor-pointer shadow-2xl group"
             >
-              <img src={city.img} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-125" alt={city.name} />
+              <img src={city.img} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={city.name} />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80" />
               <div className="absolute bottom-10 left-10">
                 <div className={`w-12 h-2 ${city.color} mb-4 rounded-full`} />
@@ -147,7 +143,7 @@ export default function Home() {
                   className="bg-white rounded-[4rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all border border-slate-100 flex flex-col lg:flex-row group"
                 >
                   <div className="lg:w-[450px] h-80 relative overflow-hidden">
-                    <img src={pg.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
+                    <img src={pg.image_url || 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
                     <div className="absolute top-8 left-8 bg-white/95 backdrop-blur-md px-5 py-2 rounded-full text-[10px] font-black text-slate-900 shadow-xl tracking-widest uppercase">
                       ⭐ {pg.rating || '4.5'}
                     </div>
@@ -161,22 +157,23 @@ export default function Home() {
                       </div>
                       <div className="md:text-right">
                         <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] mb-1">Starting Rent</p>
-                        <p className="text-4xl font-black text-blue-600">{pg.price === "Check Rent" ? "Inquiry" : `₹${pg.price}`}</p>
+                        <p className="text-4xl font-black text-blue-600">{pg.price === "Inquiry" ? "Inquiry" : `₹${pg.price}`}</p>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between border-t border-slate-50 pt-10 mt-4 gap-6">
+                      {/* REPLACED CONTACT WITH STATUS TEXT */}
                       <div className="flex gap-12">
                         <div className="flex flex-col">
-                          <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Contact</span>
-                          <span className="font-black text-slate-900 text-lg">{pg.phone || '+91 90000 00000'}</span>
+                          <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Status</span>
+                          <span className="font-black text-green-600 text-lg uppercase tracking-tighter">Verified Available ✅</span>
                         </div>
                       </div>
                       {pg.isGoogle ? (
-                        <a href={pg.url} target="_blank" className="bg-slate-900 text-white px-12 py-5 rounded-[2rem] font-black text-sm hover:bg-blue-600 transition-all shadow-xl">VIEW ON GOOGLE MAPS</a>
+                        <a href={pg.url} target="_blank" className="bg-slate-900 text-white px-12 py-5 rounded-[2rem] font-black text-sm hover:bg-blue-600 transition-all shadow-xl">View on Maps</a>
                       ) : (
                         <Link href={`/pg/${pg.id}`}>
-                          <button className="bg-slate-900 text-white px-12 py-5 rounded-[2rem] font-black text-sm hover:bg-blue-600 transition-all shadow-xl">VIEW DETAILS</button>
+                          <button className="bg-slate-900 text-white px-12 py-5 rounded-[2rem] font-black text-sm hover:bg-blue-600 transition-all shadow-xl">View Details</button>
                         </Link>
                       )}
                     </div>
