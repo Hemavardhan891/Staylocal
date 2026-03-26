@@ -1,12 +1,70 @@
 'use client';
+
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 
-export default function Dashboard() {
+export default function Home() {
+  const [allPgs, setAllPgs] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  // 1. Load Featured PGs on startup
+  useEffect(() => {
+    const loadInitial = async () => {
+      const { data } = await supabase.from('pgs').select('*').limit(3);
+      if (data) setAllPgs(data);
+    };
+    loadInitial();
+  }, []);
+
+  // 2. The Hybrid Search Function
+  const handleSearch = async (overrideValue?: string) => {
+    const query = overrideValue || searchTerm;
+    if (!query.trim()) return;
+
+    setLoading(true);
+    setHasSearched(true);
+    if (overrideValue) setSearchTerm(overrideValue);
+
+    try {
+      // Step A: Search your Database (Supabase)
+      const { data: localData, error } = await supabase
+        .from('pgs')
+        .select('*')
+        .ilike('location', `%${query}%`);
+
+      if (error) throw error;
+
+      // Step B: Logic to show Listed vs Non-Listed (Google)
+      if (localData && localData.length > 0) {
+        // Show your own database results
+        setAllPgs(localData);
+      } else {
+        // FALLBACK: Show Google Maps search directly
+        const googleLink = `https://www.google.com/maps/search/PG+hostels+in+${encodeURIComponent(query)}`;
+        
+        setAllPgs([{
+          id: 'google-fallback',
+          name: `Top PGs in ${query}`,
+          location: `We are currently verifying local PGs here. Click to see 50+ listings on Google Maps.`,
+          price: "Live Rates",
+          image_url: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800',
+          isGoogle: true,
+          url: googleLink
+        }]);
+      }
+    } catch (err) {
+      console.error("Search Error:", err);
+    } finally {
+      setLoading(false);
+      setTimeout(() => {
+        document.getElementById('listings')?.scrollIntoView({ behavior: 'smooth' });
+      }, 300);
+    }
+  };
 
   const cities = [
     { name: 'Bangalore', img: 'https://images.unsplash.com/photo-1596402184320-417e7178b2cd?w=600', tag: 'Tech Hub' },
@@ -19,86 +77,88 @@ export default function Dashboard() {
     { name: 'Ahmedabad', img: 'https://images.unsplash.com/photo-1623150502742-6a849aa94be4?w=600', tag: 'Business' }
   ];
 
-  const handleSearch = async (city?: string) => {
-    const query = city || searchTerm;
-    setLoading(true);
-    const { data } = await supabase.from('pgs').select('*').ilike('location', `%${query}%`);
-    
-    // Fallback if empty
-    if (!data || data.length === 0) {
-      setResults([{ 
-        name: `Best PGs in ${query}`, 
-        location: 'Verified on Google', 
-        isGoogle: true, 
-        url: `https://www.google.com/maps/search/PG+hostels+in+${query}` 
-      }]);
-    } else { setResults(data); }
-    setLoading(false);
-    document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   return (
-    <main className="min-h-screen bg-white selection:bg-blue-200">
-      {/* Animated Hero Section */}
-      <section className="relative h-[80vh] flex items-center justify-center overflow-hidden bg-slate-900">
+    <main className="min-h-screen bg-white">
+      {/* Hero Section */}
+      <section className="relative h-[70vh] flex items-center justify-center bg-slate-900 overflow-hidden">
         <motion.img 
-          initial={{ scale: 1.2, opacity: 0 }} animate={{ scale: 1, opacity: 0.4 }} transition={{ duration: 1.5 }}
-          src="https://images.unsplash.com/photo-1554995207-c18c203602cb?w=1920" className="absolute inset-0 w-full h-full object-cover" 
+          initial={{ scale: 1.1 }} animate={{ scale: 1 }} transition={{ duration: 10, repeat: Infinity, repeatType: 'reverse' }}
+          src="https://images.unsplash.com/photo-1554995207-c18c203602cb?w=1920" 
+          className="absolute inset-0 w-full h-full object-cover opacity-30" 
         />
         <div className="relative z-10 text-center px-6">
-          <motion.h1 initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-7xl md:text-9xl font-black text-white mb-8 tracking-tighter">
-            Stay<span className="text-blue-500">Local.</span>
+          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-6xl md:text-9xl font-black text-white mb-8 tracking-tighter">
+            Stay<span className="text-blue-600">Local.</span>
           </motion.h1>
-          <div className="flex bg-white/10 backdrop-blur-md p-3 rounded-[3rem] border border-white/20 max-w-3xl mx-auto shadow-2xl">
+          <div className="flex flex-col md:flex-row bg-white/10 backdrop-blur-xl p-2 rounded-[2.5rem] border border-white/20 shadow-2xl max-w-2xl mx-auto">
             <input 
+              className="flex-1 px-8 py-5 bg-white rounded-[2rem] text-slate-900 outline-none font-bold text-lg" 
+              placeholder="Search Area, Colony or College..."
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-8 py-4 bg-white rounded-[2.5rem] text-slate-900 outline-none font-bold text-lg" 
-              placeholder="Search Area, Colony or College..." 
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
-            <button onClick={() => handleSearch()} className="bg-blue-600 text-white px-12 rounded-[2.5rem] font-black text-lg hover:scale-105 transition-all">Search</button>
+            <button onClick={() => handleSearch()} className="bg-blue-600 text-white px-10 rounded-[2rem] font-black hover:bg-white hover:text-blue-600 transition-all">Search</button>
           </div>
         </div>
       </section>
 
       {/* 8-City Interactive Grid */}
       <section className="max-w-7xl mx-auto py-24 px-6">
-        <h2 className="text-4xl font-black mb-12 text-slate-900">Explore Top Hubs</h2>
+        <h2 className="text-4xl font-black text-slate-900 mb-12">Popular Student Hubs</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {cities.map((city, i) => (
             <motion.div
-              key={city.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-              whileHover={{ y: -15, scale: 1.02 }}
+              key={city.name}
+              whileHover={{ scale: 1.05, y: -10 }}
               onClick={() => handleSearch(city.name)}
-              className="relative h-96 rounded-[3rem] overflow-hidden cursor-pointer shadow-xl group"
+              className="relative h-80 rounded-[3rem] overflow-hidden cursor-pointer shadow-xl group"
             >
-              <img src={city.img} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-70" />
+              <img src={city.img} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all" />
               <div className="absolute bottom-8 left-8">
-                <p className="text-blue-400 font-black uppercase text-[10px] tracking-widest mb-2">{city.tag}</p>
-                <h3 className="text-3xl font-black text-white">{city.name}</h3>
+                <p className="text-blue-400 font-black uppercase text-[10px] tracking-widest mb-1">{city.tag}</p>
+                <h3 className="text-2xl font-black text-white">{city.name}</h3>
               </div>
             </motion.div>
           ))}
         </div>
       </section>
 
-      {/* Search Results Display */}
-      <section id="results" className="py-24 bg-slate-50 min-h-[50vh] px-6">
+      {/* Results Section */}
+      <section id="listings" className="py-24 bg-slate-50 min-h-[40vh] px-6">
         <div className="max-w-7xl mx-auto">
-          {results.length > 0 && <h2 className="text-4xl font-black mb-12">Results for {searchTerm}</h2>}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            {results.map((pg, i) => (
-              <motion.div key={i} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                <h3 className="text-2xl font-black mb-2">{pg.name}</h3>
-                <p className="text-slate-400 font-bold mb-6 italic">{pg.location}</p>
-                {pg.isGoogle ? (
-                  <a href={pg.url} target="_blank" className="inline-block bg-slate-900 text-white px-8 py-3 rounded-2xl font-black text-xs">Explore Google</a>
-                ) : (
-                  <p className="text-blue-600 font-black text-xl">₹{pg.price}</p>
-                )}
-              </motion.div>
-            ))}
-          </div>
+          {hasSearched && <h2 className="text-3xl font-black mb-12">Found in {searchTerm}</h2>}
+          
+          {loading ? (
+            <div className="text-center py-20 animate-pulse font-black text-blue-600">AI Searching Database & Google...</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+              <AnimatePresence>
+                {allPgs.map((pg) => (
+                  <motion.div key={pg.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm border border-slate-100 group">
+                    <div className="h-60 relative">
+                      <img src={pg.image_url} className="w-full h-full object-cover" />
+                      <div className={`absolute top-4 left-4 px-4 py-1 rounded-full text-[10px] font-black uppercase ${pg.isGoogle ? 'bg-white text-slate-900' : 'bg-blue-600 text-white'}`}>
+                        {pg.isGoogle ? 'Google Search' : 'StayLocal Verified'}
+                      </div>
+                    </div>
+                    <div className="p-8">
+                      <h3 className="text-xl font-black text-slate-900 mb-1">{pg.name}</h3>
+                      <p className="text-slate-400 text-sm font-bold mb-6 truncate">{pg.location}</p>
+                      <div className="flex justify-between items-center border-t pt-6">
+                        <span className="text-xl font-black text-blue-600">{pg.isGoogle ? "Check Maps" : `₹${pg.price}`}</span>
+                        {pg.isGoogle ? (
+                          <a href={pg.url} target="_blank" className="bg-slate-900 text-white px-6 py-2 rounded-xl text-xs font-black">Explore Google</a>
+                        ) : (
+                          <Link href={`/pg/${pg.id}`} className="bg-slate-900 text-white px-6 py-2 rounded-xl text-xs font-black">Details</Link>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
         </div>
       </section>
     </main>
