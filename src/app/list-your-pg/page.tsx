@@ -1,118 +1,127 @@
-// src/app/list-your-pg/page.tsx
 'use client';
 
 import { useState } from 'react';
-import SEO from '@/components/SEO';
-import { supabase } from '@/lib/supabase'; // Ensure this file exists in src/lib/supabase.ts
+import { motion } from 'framer-motion';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
-export default function ListYourPG() {
+export default function ListPG() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     location: '',
     price: '',
-    gender: 'Boys',
-    image_url: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=500'
+    category: 'Boys',
+    description: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // Sending data to Supabase
-    const { data, error } = await supabase
-      .from('pgs')
-      .insert([
-        { 
-          name: formData.name, 
-          location: formData.location, 
-          price: parseInt(formData.price), 
-          gender: formData.gender,
-          image_url: formData.image_url
-        }
-      ]);
+    try {
+      // Ensure the table name 'pgs' and column names match your Supabase exactly
+      const { data, error } = await supabase
+        .from('pgs')
+        .insert([
+          { 
+            name: formData.name, 
+            location: formData.location, 
+            price: parseInt(formData.price), // Converting to number
+            category: formData.category,
+            description: formData.description,
+            // Using a high-quality default image if user hasn't uploaded one
+            image_url: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800'
+          }
+        ]);
 
-    if (error) {
-      console.error('Error inserting data:', error.message);
-      alert('Error submitting form. Check console.');
-    } else {
-      setSubmitted(true);
+      if (error) throw error;
+
+      alert("🎉 Property listed successfully!");
+      router.push('/'); // Redirect to dashboard
+      
+    } catch (error: any) {
+      console.error("Submission Error:", error);
+      alert("Error: " + error.message + ". Check if RLS policies are enabled in Supabase.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  if (submitted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="max-w-md w-full bg-white p-10 rounded-3xl shadow-xl text-center border">
-          <div className="text-6xl mb-6">🎉</div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">PG Listed!</h2>
-          <p className="text-gray-500 mb-8">Your PG has been successfully added to our database.</p>
-          <a href="/" className="inline-block bg-blue-600 text-white px-8 py-3 rounded-xl font-bold">Back to Home</a>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <main className="min-h-screen bg-gray-50 py-16 px-4">
-      <SEO title="List Your PG | StayLocal" description="Add your PG to our network." location="India" />
+    <main className="min-h-screen bg-slate-50 py-20 px-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        className="max-w-2xl mx-auto bg-white p-12 rounded-[3rem] shadow-2xl border border-slate-100"
+      >
+        <div className="mb-10 text-center">
+          <h1 className="text-4xl font-black text-slate-900 tracking-tighter">List Your <span className="text-blue-600">Property.</span></h1>
+          <p className="text-slate-400 font-bold mt-2 uppercase tracking-widest text-xs">Join the 3x Growth Network</p>
+        </div>
 
-      <div className="max-w-3xl mx-auto">
-        <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-sm border p-8 md:p-12 space-y-8">
-          <h1 className="text-3xl font-black text-gray-900">List Your Property</h1>
-          
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2 ml-2">PG Name</label>
+            <input 
+              required
+              className="w-full p-5 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 ring-blue-500 font-bold text-slate-900"
+              placeholder="e.g. Royal Executive PG"
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">PG Name</label>
+              <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2 ml-2">Locality / Area</label>
               <input 
-                required 
-                type="text" 
-                className="w-full p-4 bg-gray-50 border rounded-xl outline-none focus:border-blue-500 text-black" 
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">Locality</label>
-              <input 
-                required 
-                type="text" 
-                className="w-full p-4 bg-gray-50 border rounded-xl outline-none focus:border-blue-500 text-black" 
+                required
+                className="w-full p-5 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 ring-blue-500 font-bold"
+                placeholder="e.g. OMR, Chennai"
                 onChange={(e) => setFormData({...formData, location: e.target.value})}
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">Monthly Rent (₹)</label>
+              <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2 ml-2">Monthly Rent (₹)</label>
               <input 
-                required 
-                type="number" 
-                className="w-full p-4 bg-gray-50 border rounded-xl outline-none focus:border-blue-500 text-black" 
+                required type="number"
+                className="w-full p-5 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 ring-blue-500 font-bold"
+                placeholder="8500"
                 onChange={(e) => setFormData({...formData, price: e.target.value})}
               />
             </div>
-            <div>
-              <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">Category</label>
-              <select 
-                className="w-full p-4 bg-gray-50 border rounded-xl outline-none focus:border-blue-500 text-black"
-                onChange={(e) => setFormData({...formData, gender: e.target.value})}
-              >
-                <option value="Boys">Boys Only</option>
-                <option value="Girls">Girls Only</option>
-                <option value="Unisex">Unisex</option>
-              </select>
-            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2 ml-2">Category</label>
+            <select 
+              className="w-full p-5 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 ring-blue-500 font-bold appearance-none"
+              onChange={(e) => setFormData({...formData, category: e.target.value})}
+            >
+              <option>Boys</option>
+              <option>Girls</option>
+              <option>Co-living</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2 ml-2">Description</label>
+            <textarea 
+              rows={4}
+              className="w-full p-5 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 ring-blue-500 font-bold"
+              placeholder="Tell us about the amenities (WiFi, Food, AC...)"
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+            />
           </div>
 
           <button 
-            disabled={loading}
-            type="submit" 
-            className="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold text-xl hover:bg-blue-700 transition disabled:bg-gray-400"
+            type="submit" disabled={loading}
+            className="w-full bg-slate-900 text-white py-6 rounded-[2rem] font-black text-lg hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 active:scale-95"
           >
-            {loading ? 'Submitting...' : 'Submit Property'}
+            {loading ? 'Processing...' : 'Submit Listing'}
           </button>
         </form>
-      </div>
+      </motion.div>
     </main>
   );
 }
